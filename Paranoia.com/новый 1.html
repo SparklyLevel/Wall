@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Wall 3.4</title>
+<link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0px;height:100%;background:#000;font-family:'JetBrains Mono',monospace;overflow:hidden}
+  #wall{display:flex;flex-direction:column;width:100%;height:100%}
+  .line{display:flex;justify-content:space-between;align-items:center;width:100%}
+
+  .wordWrap{
+    position:relative;
+    overflow:hidden;
+    min-width:max-content;
+    pointer-events:none;
+  }
+  .word{
+    white-space:nowrap;
+    font-size:15px;
+    font-weight:300;
+    letter-spacing:.1em;
+    color:#3B3939;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 6px;
+    transition: background-color .3s ease, color .3s ease;
+    
+  }
+  .mask{
+    position:absolute;
+    inset:0;
+    background:#000;
+    animation:reveal 1.2s ease forwards;
+  }
+  @keyframes reveal{
+    to{transform:translateX(100%)}
+  }
+  #bigBox{
+    position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-100%);  
+  margin-top:-20px;                 
+  width:min(600px,80vw);
+  max-height:40vh;
+  overflow-y:auto;
+  background:#111;
+  border-radius:12px;
+  padding:20px;
+  font-size:16px;
+  line-height:1.4;
+  color:#ccc !important;
+  z-index:10;
+  display:block;
+  }
+  
+  #inputBox{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,120%);
+    width:min(400px,70vw);
+    background:#111;
+    border-radius:12px;
+  }
+  #commandInput{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:#fff !important;
+    font-size:18px;
+    padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  #cookieBanner{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    background:rgba(0,0,0,.85);
+    color:#fff;
+    text-align:center;
+    padding:12px;
+    font-size:14px;
+    display:none;
+    z-index:100;
+  }
+  #cookieBanner button{margin-left:12px;padding:4px 12px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="wall"></div>
+<div id="bigBox"></div>
+<div id="inputBox"><input id="commandInput" type="text" placeholder="> введите команду"></div>
+<div id="cookieBanner">
+  Мы используем cookie для улучшения работы сайта.
+  <button onclick="acceptCookies()">Принять</button>
+  <button onclick="declineCookies()">Отклонить</button>
+</div>
+
+<script>
+if(!localStorage.getItem('cookieConsent'))document.getElementById('cookieBanner').style.display='block';
+function acceptCookies(){document.cookie='cookieConsent=accepted; max-age=31536000; path=/';localStorage.setItem('cookieConsent','accepted');hideBanner()}
+function declineCookies(){localStorage.setItem('cookieConsent','declined');hideBanner()}
+function hideBanner(){document.getElementById('cookieBanner').style.display='none'}
+
+const baseWords = [
+  "погода","прогноз","рецепт","отзывы","цена","купить","скидки","новости","расписание","карта","фото","видео","инструкция","обзор","сравнение","отель","авиабилеты","работа","резюме","форум","вакансии","курсы","обучение","бесплатно","тренды","магазин","адрес","телефон","график","маршрут","билеты","парковка","доставка","наличие","аналоги","врач","тест","кино","афиша","экскурсии","музей","аэропорт","поезд","такси","каршеринг","аренда","ипотека","кредит","страхование","ремонт","дизайн","мебель","растения","семена","дети","игрушки","одежда","обувь","электроника","смартфоны","ноутбуки","телевизоры","холодильники","пылесосы","кофемашины","посуда","косметика","парфюмерия","витамины","спорт","йога","тренировки","путешествия","виза","загранпаспорт","консульство","туры","курорты","отдых","круизы","туристы","страховка","авиакомпании","чартеры","хостелы","апартаменты","booking","airbnb","uber","яндекс","цветы","подарки","сувениры","праздник","ёлки","ручки","книги","аудио","музыка","подкасты","кинотеатр","игры","приложения","обновления","браузеры","vpn","антивирусы","облако","хостинг","домен","seo","реклама","таргет","маркетинг","фриланс","удалёнка","вебинары","конференции","it","python","дата","вакансии","стажировки"
+];
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function buildWall(){
+  const wall=document.getElementById('wall');
+  wall.innerHTML='';
+  const lineHeight=window.innerHeight/35;
+  const wordsPerLine=Math.floor(window.innerWidth/70);
+  const totalLines=Math.floor(window.innerHeight/lineHeight);
+  const words=[];
+  while(words.length<totalLines*wordsPerLine) words.push(...shuffle([...baseWords]));
+  let idx=0;
+
+  for(let r=0;r<totalLines;r++){
+    const line=document.createElement('div');
+    line.className='line';
+    line.style.height=lineHeight+'px';
+    for(let w=0;w<wordsPerLine;w++){
+      const wrap=document.createElement('span');
+      wrap.className='wordWrap';
+
+      const span=document.createElement('span');
+      span.className='word';
+      span.textContent=words[idx++];
+      wrap.appendChild(span);
+
+      const mask=document.createElement('span');
+      mask.className='mask';
+      wrap.appendChild(mask);
+
+      line.appendChild(wrap);
+    }
+    wall.appendChild(line);
+  }
+}
+
+buildWall();
+window.addEventListener('resize',buildWall);
+
+const out=document.getElementById('outputBox');
+document.getElementById('commandInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const cmd=e.target.value.trim();
+    if(cmd){
+      out.style.display='block';
+      out.textContent=`> ${cmd}\n…здесь будет ответ…`;
+    }else{
+      out.style.display='none';
+    }
+    e.target.value='';
+  }
+});
+</script>
+<button id="themeToggle" aria-label="Переключить тему">
+  <span class="sun"></span>
+</button>
+</body>
+</html>
